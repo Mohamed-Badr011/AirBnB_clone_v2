@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-""" starts a Flask web application """
+""" Starts a Flask web application """
 from flask import Flask, render_template
 from models import *
 from models import storage
@@ -20,4 +20,5 @@ def teardown_db(exception):
 
 
 if __name__ == '__main__':
+    """ Main Function """
     app.run(host='0.0.0.0', port='5000')
