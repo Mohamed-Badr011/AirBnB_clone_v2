@@ -1,6 +1,11 @@
 #!/usr/bin/python3
 """
-Contains the class DBStorage
+This module defines the DBStorage class, which provides an interface to interact
+with a MySQL database using SQLAlchemy.
+
+Classes:
+    DBStorage: A class that manages interactions between the application and the
+               MySQL database, supporting CRUD operations and advanced queries.
 """
 
 import models
@@ -16,17 +21,33 @@ import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-classes = {"Amenity": Amenity, "City": City,
-           "Place": Place, "Review": Review, "State": State, "User": User}
+# A dictionary mapping class names to their corresponding class objects
+classes = {
+    "Amenity": Amenity,
+    "City": City,
+    "Place": Place,
+    "Review": Review,
+    "State": State,
+    "User": User
+}
 
 
 class DBStorage:
-    """interaacts with the MySQL database"""
+    """
+    Interacts with the MySQL database using SQLAlchemy.
+
+    Attributes:
+        __engine (sqlalchemy.engine.Engine): The SQLAlchemy engine for database connections.
+        __session (sqlalchemy.orm.scoped_session): The scoped session for managing database queries.
+    """
     __engine = None
     __session = None
 
     def __init__(self):
-        """Instantiate a DBStorage object"""
+        """
+        Initializes a DBStorage instance by creating a database engine and,
+        if in test environment, dropping all existing tables.
+        """
         HBNB_MYSQL_USER = getenv('HBNB_MYSQL_USER')
         HBNB_MYSQL_PWD = getenv('HBNB_MYSQL_PWD')
         HBNB_MYSQL_HOST = getenv('HBNB_MYSQL_HOST')
@@ -41,7 +62,16 @@ class DBStorage:
             Base.metadata.drop_all(self.__engine)
 
     def all(self, cls=None):
-        """query on the current database session"""
+        """
+        Queries the current database session for all objects of a specific class,
+        or all objects if no class is specified.
+
+        Args:
+            cls (class, optional): The class to filter objects by. Defaults to None.
+
+        Returns:
+            dict: A dictionary of objects, keyed by '<class name>.<object id>'.
+        """
         new_dict = {}
         for clss in classes:
             if cls is None or cls is classes[clss] or cls is clss:
@@ -49,50 +79,77 @@ class DBStorage:
                 for obj in objs:
                     key = obj.__class__.__name__ + '.' + obj.id
                     new_dict[key] = obj
-        return (new_dict)
+        return new_dict
 
     def new(self, obj):
-        """add the object to the current database session"""
+        """
+        Adds the object to the current database session.
+
+        Args:
+            obj (BaseModel): The object to be added.
+        """
         self.__session.add(obj)
 
     def save(self):
-        """commit all changes of the current database session"""
+        """
+        Commits all changes of the current database session.
+        """
         self.__session.commit()
 
     def delete(self, obj=None):
-        """delete from the current database session obj if not None"""
+        """
+        Deletes the object from the current database session, if it exists.
+
+        Args:
+            obj (BaseModel, optional): The object to be deleted. Defaults to None.
+        """
         if obj is not None:
             self.__session.delete(obj)
 
     def reload(self):
-        """reloads data from the database"""
+        """
+        Reloads the database by creating all tables and initializing a new scoped session.
+        """
         Base.metadata.create_all(self.__engine)
         sess_factory = sessionmaker(bind=self.__engine, expire_on_commit=False)
         Session = scoped_session(sess_factory)
         self.__session = Session
 
     def close(self):
-        """call remove() method on the private session attribute"""
+        """
+        Closes the session by calling the remove() method on the private session attribute.
+        """
         self.__session.remove()
 
     def get(self, cls, id):
         """
-        Returns the object based on the class name and its ID, or
-        None if not found
+        Retrieves an object based on its class and ID.
+
+        Args:
+            cls (class): The class of the object.
+            id (str): The ID of the object.
+
+        Returns:
+            BaseModel: The object if found, otherwise None.
         """
         if cls not in classes.values():
             return None
 
         all_cls = models.storage.all(cls)
         for value in all_cls.values():
-            if (value.id == id):
+            if value.id == id:
                 return value
-
         return None
 
     def count(self, cls=None):
         """
-        count the number of objects in storage
+        Counts the number of objects in storage, optionally filtered by class.
+
+        Args:
+            cls (class, optional): The class to filter objects by. Defaults to None.
+
+        Returns:
+            int: The number of objects in storage.
         """
         all_class = classes.values()
 
@@ -104,3 +161,4 @@ class DBStorage:
             count = len(models.storage.all(cls).values())
 
         return count
+

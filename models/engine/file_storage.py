@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 """
-Contains the FileStorage class
+Contains the FileStorage class for managing data serialization and deserialization
+between Python objects and a JSON file.
+
+Classes:
+    FileStorage: Handles storage of Python objects in JSON format and retrieval of objects.
 """
 
 import json
@@ -14,20 +18,41 @@ from models.state import State
 from models.user import User
 from hashlib import md5
 
-classes = {"Amenity": Amenity, "BaseModel": BaseModel, "City": City,
-           "Place": Place, "Review": Review, "State": State, "User": User}
+# A dictionary mapping class names to their corresponding class objects
+classes = {
+    "Amenity": Amenity,
+    "BaseModel": BaseModel,
+    "City": City,
+    "Place": Place,
+    "Review": Review,
+    "State": State,
+    "User": User
+}
 
 
 class FileStorage:
-    """serializes instances to a JSON file & deserializes back to instances"""
+    """
+    Serializes instances to a JSON file and deserializes JSON file back to instances.
 
-    # string - path to the JSON file
+    Attributes:
+        __file_path (str): Path to the JSON file used for storage.
+        __objects (dict): A dictionary storing all objects, keyed by "<class name>.id".
+    """
+
     __file_path = "file.json"
-    # dictionary - empty but will store all objects by <class name>.id
     __objects = {}
 
     def all(self, cls=None):
-        """returns the dictionary __objects"""
+        """
+        Returns the dictionary of objects in storage. If a class is specified,
+        only objects of that class are returned.
+
+        Args:
+            cls (class, optional): The class to filter objects by. Defaults to None.
+
+        Returns:
+            dict: A dictionary of objects filtered by class or all objects.
+        """
         if cls is not None:
             new_dict = {}
             for key, value in self.__objects.items():
@@ -37,13 +62,20 @@ class FileStorage:
         return self.__objects
 
     def new(self, obj):
-        """sets in __objects the obj with key <obj class name>.id"""
+        """
+        Adds a new object to the storage dictionary.
+
+        Args:
+            obj (BaseModel): The object to be added to storage.
+        """
         if obj is not None:
             key = obj.__class__.__name__ + "." + obj.id
             self.__objects[key] = obj
 
     def save(self):
-        """serializes __objects to the JSON file (path: __file_path)"""
+        """
+        Serializes the storage dictionary to the JSON file.
+        """
         json_objects = {}
         for key in self.__objects:
             if key == "password":
@@ -53,7 +85,10 @@ class FileStorage:
             json.dump(json_objects, f)
 
     def reload(self):
-        """deserializes the JSON file to __objects"""
+        """
+        Deserializes the JSON file back into the storage dictionary.
+        If the file does not exist, the method does nothing.
+        """
         try:
             with open(self.__file_path, 'r') as f:
                 jo = json.load(f)
@@ -63,34 +98,52 @@ class FileStorage:
             pass
 
     def delete(self, obj=None):
-        """delete obj from __objects if it’s inside"""
+        """
+        Deletes an object from the storage dictionary, if it exists.
+
+        Args:
+            obj (BaseModel, optional): The object to be deleted. Defaults to None.
+        """
         if obj is not None:
             key = obj.__class__.__name__ + '.' + obj.id
             if key in self.__objects:
                 del self.__objects[key]
 
     def close(self):
-        """call reload() method for deserializing the JSON file to objects"""
+        """
+        Calls the reload() method to deserialize the JSON file into objects.
+        """
         self.reload()
 
     def get(self, cls, id):
         """
-        Returns the object based on the class name and its ID, or
-        None if not found
+        Retrieves an object based on its class and ID.
+
+        Args:
+            cls (class): The class of the object to retrieve.
+            id (str): The ID of the object to retrieve.
+
+        Returns:
+            BaseModel: The retrieved object, or None if not found.
         """
         if cls not in classes.values():
             return None
 
         all_cls = models.storage.all(cls)
         for value in all_cls.values():
-            if (value.id == id):
+            if value.id == id:
                 return value
-
         return None
 
     def count(self, cls=None):
         """
-        count the number of objects in storage
+        Counts the number of objects in storage, optionally filtered by class.
+
+        Args:
+            cls (class, optional): The class to filter objects by. Defaults to None.
+
+        Returns:
+            int: The number of objects in storage.
         """
         all_class = classes.values()
 
@@ -102,3 +155,4 @@ class FileStorage:
             count = len(models.storage.all(cls).values())
 
         return count
+
